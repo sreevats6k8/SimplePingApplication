@@ -45,14 +45,6 @@ public class IcmpPingBusiness {
       }
       in.close();
 
-      if (pingResult.contains("100% loss")) {
-        LOGGER.warn(String.format("Packet loss for host=[%s]", host.getHostName()));
-      } else if (pingResult.contains("0% loss")) {
-        LOGGER.info(String.format("ICMP Ping success for for host=[%s]", host.getHostName()));
-      } else {
-        LOGGER.warn(String.format("Partial packet loss for host=[%s]", host.getHostName()));
-      }
-
       HostStatisticsCache cache = HostStatisticsCache.getInstance();
       if (cache.getCache().get(host) != null) {
         HostStatistics hs = cache.getCache().get(host);
@@ -62,6 +54,17 @@ public class IcmpPingBusiness {
         hs.setIcmpPingStats(pingResult);
         cache.getCache().put(host, hs);
       }
+
+      if (pingResult.contains("100% loss")) {
+        // LOGGER.warn(String.format("Packet loss for host=[%s]", host.getHostName()));
+        ReportingBusiness.getInstance().doBusiness(cache.getCache().get(host));
+      } else if (pingResult.contains("0% loss")) {
+        LOGGER.info(String.format("ICMP Ping success for for host=[%s]", host.getHostName()));
+      } else {
+        ReportingBusiness.getInstance().doBusiness(cache.getCache().get(host));
+        // LOGGER.warn(String.format("Partial packet loss for host=[%s]", host.getHostName()));
+      }
+
       host.setIcmpPingActive(false);
     } catch (IOException e) {
       System.out.println(e);

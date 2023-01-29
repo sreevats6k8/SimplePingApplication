@@ -33,6 +33,7 @@ public class TraceRouteBusiness {
     }
 
     String traceRtCommand = "tracert " + host.getHostName();
+    LOGGER.info(traceRtCommand + " executed by thread" + Thread.currentThread().getName());
     String traceRtResult = "";
     try {
       Runtime r = Runtime.getRuntime();
@@ -41,16 +42,14 @@ public class TraceRouteBusiness {
       BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
       String inputLine;
       while ((inputLine = in.readLine()) != null) {
+        /* if (host.getHostName().equals("oranum.com")) {
+          System.out.println("oranum.com status tracert:: " + inputLine);
+        }*/
+
         // System.out.println(inputLine);
         traceRtResult += inputLine;
       }
       in.close();
-
-      if (traceRtResult.contains("Trace complete")) {
-        LOGGER.info(String.format("Tracert success for host=[%s]", host.getHostName()));
-      } else {
-        LOGGER.warn(String.format("Tracert failed for host=[%s]", host.getHostName()));
-      }
 
       HostStatisticsCache cache = HostStatisticsCache.getInstance();
       if (cache.getCache().get(host) != null) {
@@ -61,7 +60,14 @@ public class TraceRouteBusiness {
         hs.setTraceRouteStats(traceRtResult);
         cache.getCache().put(host, hs);
       }
+
+      if (traceRtResult.contains("Trace complete")) {
+        LOGGER.info(String.format("Tracert success for host=[%s]", host.getHostName()));
+      } else {
+        ReportingBusiness.getInstance().doBusiness(cache.getCache().get(host));
+      }
       host.setTracertActive(false);
+
     } catch (IOException e) {
       System.out.println(e);
       host.setTracertActive(false);
